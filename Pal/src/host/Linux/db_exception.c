@@ -105,10 +105,12 @@ static void handle_sync_signal(int signum, siginfo_t* info, struct ucontext* uc)
             break;
     }
 
+    char buf[LOCATION_BUF_SIZE];
+    pal_describe_location((void*)rip, buf, sizeof(buf));
+
     bool in_vdso = is_in_vdso(rip);
-    log_error("*** Unexpected %s occurred inside %s (PID = %ld, TID = %ld, RIP = +0x%08lx)! ***",
-              name, in_vdso ? "VDSO" : "PAL", DO_SYSCALL(getpid), DO_SYSCALL(gettid),
-              rip - (in_vdso ? g_vdso_start : (uintptr_t)TEXT_START));
+    log_error("*** Unexpected %s occurred inside %s (%s, PID = %ld, TID = %ld)! ***",
+              name, in_vdso ? "VDSO" : "PAL", buf, DO_SYSCALL(getpid), DO_SYSCALL(gettid));
 
     _DkProcessExit(1);
 }

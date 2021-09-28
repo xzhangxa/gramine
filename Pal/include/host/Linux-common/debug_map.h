@@ -13,6 +13,8 @@
 #ifndef DEBUG_MAP_H
 #define DEBUG_MAP_H
 
+#include <stddef.h>
+
 struct debug_map {
     char* name;
     void* addr;
@@ -31,5 +33,9 @@ int debug_map_remove(void* addr);
 /* Initialize `g_debug_map` with executable files already loaded by the system (main program, and
  * dynamic libraries). Processes `/proc/self/maps`. */
 int debug_map_init_from_proc_maps(void);
+
+/* Try to describe code location. Looks up the right debug map, and runs `addr2line` in a
+ * subprocess. */
+int debug_describe_location(void* addr, char* buf, size_t buf_size);
 
 #endif /* DEBUG_MAP_H */

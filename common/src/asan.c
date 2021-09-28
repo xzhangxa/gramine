@@ -11,16 +11,10 @@
 #error This code should be compiled only with ASAN defined.
 #endif
 
-#define RETURN_ADDR() (__builtin_extract_return_addr(__builtin_return_address(0)))
+#define RETURN_ADDR() ((uintptr_t)__builtin_extract_return_addr(__builtin_return_address(0)))
 
 /* See `callbacks.h` */
-#if defined(IN_SHIM)
-#define ABORT_NAME "shim_abort"
-#elif defined(IN_PAL)
-#define ABORT_NAME "pal_abort"
-#else
-#define ABORT_NAME "abort"
-#endif
+#define ABORT_NAME XSTRINGIFY(abort)
 
 __attribute_no_sanitize_address
 void asan_poison_region(uintptr_t addr, size_t size, uint8_t value) {
@@ -127,17 +121,21 @@ static void asan_dump(uintptr_t bad_addr) {
 
 /* Display full report for the user */
 __attribute_no_sanitize_address
-static void asan_report(void* ip_addr, uintptr_t addr, size_t size, bool is_load) {
+static void asan_report(uintptr_t return_addr, uintptr_t addr, size_t size, bool is_load) {
     uintptr_t bad_addr;
     const char* bug_type;
     asan_find_problem(addr, size, &bad_addr, &bug_type);
+
+    /* Look up `return_addr - 1` to determine the call location */
+    char buf[LOCATION_BUF_SIZE];
+    describe_location((void*)(return_addr - 1), buf, LOCATION_BUF_SIZE);
 
     log_error("asan: %s while trying to %s %lu byte%s at 0x%lx", bug_type,
               is_load ? "load" : "store", size, (size > 1 ? "s" : ""), addr);
     log_error("asan: the bad address is %p (%lu from beginning of access)", (void*)bad_addr,
               bad_addr - addr);
-    log_error("asan: IP = %p (for a full traceback, use GDB with a breakpoint at \"%s\")", ip_addr,
-              ABORT_NAME);
+    log_error("asan: location: %s", buf);
+    log_error("asan: (for a full traceback, use GDB with a breakpoint at \"%s\")", ABORT_NAME);
     log_error("asan:");
 
     asan_dump(bad_addr);

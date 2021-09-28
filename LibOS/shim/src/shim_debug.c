@@ -16,6 +16,10 @@
 #include "shim_types.h"
 #include "shim_utils.h"
 
+void shim_describe_location(void* addr, char* buf, size_t buf_size) {
+    DkDebugDescribeLocation(addr, buf, buf_size);
+}
+
 #ifndef DEBUG
 
 int init_r_debug(void) {

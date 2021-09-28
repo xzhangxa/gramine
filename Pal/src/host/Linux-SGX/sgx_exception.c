@@ -22,6 +22,7 @@
 
 #include "api.h"
 #include "cpu.h"
+#include "debug_map.h"
 #include "ecall_types.h"
 #include "ocall_types.h"
 #include "pal_linux.h"
@@ -137,18 +138,20 @@ static void handle_sync_signal(int signum, siginfo_t* info, struct ucontext* uc)
 
     /* exception happened in untrusted PAL code (during syscall handling): fatal in Gramine */
     unsigned long rip = ucontext_get_ip(uc);
+    char buf[LOCATION_BUF_SIZE];
+    pal_describe_location((void*)rip, buf, sizeof(buf));
     switch (signum) {
         case SIGSEGV:
-            log_error("Segmentation Fault in Untrusted Code (RIP = %08lx)", rip);
+            log_error("Segmentation Fault in Untrusted Code (%s)", buf);
             break;
         case SIGILL:
-            log_error("Illegal Instruction in Untrusted Code (RIP = %08lx)", rip);
+            log_error("Illegal Instruction in Untrusted Code (%s)", buf);
             break;
         case SIGFPE:
-            log_error("Arithmetic Exception in Untrusted Code (RIP = %08lx)", rip);
+            log_error("Arithmetic Exception in Untrusted Code (%s)", buf);
             break;
         case SIGBUS:
-            log_error("Memory Mapping Exception in Untrusted Code (RIP = %08lx)", rip);
+            log_error("Memory Mapping Exception in Untrusted Code (%s)", buf);
             break;
     }
     DO_SYSCALL(exit_group, 1);
@@ -255,4 +258,12 @@ err:
 noreturn void pal_abort(void) {
     DO_SYSCALL(exit_group, 1);
     die_or_inf_loop();
+}
+
+void pal_describe_location(void* addr, char* buf, size_t buf_size) {
+#ifdef DEBUG
+    if (debug_describe_location(addr, buf, buf_size) == 0)
+        return;
+#endif
+    default_describe_location(addr, buf, buf_size);
 }
