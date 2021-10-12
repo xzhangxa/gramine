@@ -137,23 +137,35 @@ static void handle_sync_signal(int signum, siginfo_t* info, struct ucontext* uc)
     }
 
     /* exception happened in untrusted PAL code (during syscall handling): fatal in Gramine */
+
     unsigned long rip = ucontext_get_ip(uc);
     char buf[LOCATION_BUF_SIZE];
     pal_describe_location((void*)rip, buf, sizeof(buf));
+
+    const char* event_name;
     switch (signum) {
         case SIGSEGV:
-            log_error("Segmentation Fault in Untrusted Code (%s)", buf);
+            event_name = "segmentation fault (SIGSEGV)";
             break;
+
         case SIGILL:
-            log_error("Illegal Instruction in Untrusted Code (%s)", buf);
+            event_name = "illegal instruction (SIGILL)";
             break;
+
         case SIGFPE:
-            log_error("Arithmetic Exception in Untrusted Code (%s)", buf);
+            event_name = "arithmetic exception (SIGFPE)";
             break;
+
         case SIGBUS:
-            log_error("Memory Mapping Exception in Untrusted Code (%s)", buf);
+            event_name = "memory mapping exception (SIGBUS)";
+            break;
+
+        default:
+            event_name = "unknown exception";
             break;
     }
+
+    log_error("Unexpected %s occurred inside untrusted PAL (%s)", event_name, buf);
     DO_SYSCALL(exit_group, 1);
     die_or_inf_loop();
 }

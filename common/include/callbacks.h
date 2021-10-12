@@ -13,7 +13,8 @@
  * statically linked together in a single binary (thus, we want to avoid name collisions in
  * callbacks).
  *
- * All environments should implement `_log` and `_abort` callbacks.
+ * All environments should implement `_log` and `_abort` callbacks, and can optionally implement
+ * `describe_location`.
  */
 
 #ifndef COMMON_CALLBACKS_H
