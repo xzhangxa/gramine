@@ -126,7 +126,8 @@ static void asan_report(uintptr_t return_addr, uintptr_t addr, size_t size, bool
     const char* bug_type;
     asan_find_problem(addr, size, &bad_addr, &bug_type);
 
-    /* Look up `return_addr - 1` to determine the call location */
+    /* Use `return_addr - 1` to approximate the address of the calling instruction: `return_addr`
+     * points to the instruction *after* it, so it might resolve to wrong source line */
     char buf[LOCATION_BUF_SIZE];
     describe_location((void*)(return_addr - 1), buf, LOCATION_BUF_SIZE);
 

@@ -92,25 +92,13 @@ static void handle_sync_signal(int signum, siginfo_t* info, struct ucontext* uc)
     }
 
     /* exception happened in PAL code: this is fatal in Gramine */
-    const char* name = "exception";
-    switch (event) {
-        case PAL_EVENT_ARITHMETIC_ERROR:
-            name = "arithmetic exception";
-            break;
-        case PAL_EVENT_MEMFAULT:
-            name = "memory fault";
-            break;
-        case PAL_EVENT_ILLEGAL:
-            name = "illegal instruction";
-            break;
-    }
-
     char buf[LOCATION_BUF_SIZE];
     pal_describe_location((void*)rip, buf, sizeof(buf));
 
+    const char* event_name = pal_event_name(event);
     bool in_vdso = is_in_vdso(rip);
-    log_error("*** Unexpected %s occurred inside %s (%s, PID = %ld, TID = %ld)! ***",
-              name, in_vdso ? "VDSO" : "PAL", buf, DO_SYSCALL(getpid), DO_SYSCALL(gettid));
+    log_error("Unexpected %s occurred inside %s (%s, PID = %ld, TID = %ld)!", event_name,
+              in_vdso ? "VDSO" : "PAL", buf, DO_SYSCALL(getpid), DO_SYSCALL(gettid));
 
     _DkProcessExit(1);
 }
