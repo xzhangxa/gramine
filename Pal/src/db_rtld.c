@@ -836,7 +836,7 @@ void DkDebugMapRemove(PAL_PTR start_addr) {
 #endif
 }
 
-void DkDebugDescribeLocation(PAL_NUM addr, PAL_PTR buf, PAL_NUM buf_size) {
+void DkDebugDescribeLocation(uintptr_t addr, char* buf, size_t buf_size) {
     pal_describe_location(addr, buf, buf_size);
 }
 

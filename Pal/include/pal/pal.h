@@ -828,7 +828,7 @@ void DkDebugMapAdd(PAL_STR uri, PAL_PTR start_addr);
 void DkDebugMapRemove(PAL_PTR start_addr);
 
 /* Describe the code under given address (see `describe_location()` in `callbacks.h`). Without
- * DEBUG, falls back to raw value ("%p"). */
-void DkDebugDescribeLocation(PAL_NUM addr, PAL_PTR buf, PAL_NUM buf_size);
+ * DEBUG, falls back to raw value ("0x1234"). */
+void DkDebugDescribeLocation(uintptr_t addr, char* buf, size_t buf_size);
 
 #endif /* PAL_H */

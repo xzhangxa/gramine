@@ -104,6 +104,6 @@ out:
         }
     }
 
-    /* We don't wait for the child process, because PAL ignores SIGCHLD */
+    /* We don't wait for the child process, because PAL uses SIG_IGN for SIGCHLD */
     return ret;
 }
