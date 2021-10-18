@@ -129,7 +129,7 @@ static void asan_report(uintptr_t return_addr, uintptr_t addr, size_t size, bool
     /* Use `return_addr - 1` to approximate the address of the calling instruction: `return_addr`
      * points to the instruction after the call, so it might resolve to wrong source line */
     char buf[LOCATION_BUF_SIZE];
-    describe_location((void*)(return_addr - 1), buf, LOCATION_BUF_SIZE);
+    describe_location(return_addr - 1, buf, LOCATION_BUF_SIZE);
 
     log_error("asan: %s while trying to %s %lu byte%s at 0x%lx", bug_type,
               is_load ? "load" : "store", size, (size > 1 ? "s" : ""), addr);

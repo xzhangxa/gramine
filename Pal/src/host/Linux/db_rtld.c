@@ -124,6 +124,6 @@ void setup_vdso_map(ElfW(Addr) addr) {
         g_linux_state.vdso_clock_gettime = (void*)(load_offset + sym->st_value);
 }
 
-int _DkDebugDescribeLocation(void* addr, char* buf, size_t buf_size) {
+int _DkDebugDescribeLocation(uintptr_t addr, char* buf, size_t buf_size) {
     return debug_describe_location(addr, buf, buf_size);
 }

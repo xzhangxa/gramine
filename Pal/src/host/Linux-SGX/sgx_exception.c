@@ -140,7 +140,7 @@ static void handle_sync_signal(int signum, siginfo_t* info, struct ucontext* uc)
 
     unsigned long rip = ucontext_get_ip(uc);
     char buf[LOCATION_BUF_SIZE];
-    pal_describe_location((void*)rip, buf, sizeof(buf));
+    pal_describe_location(rip, buf, sizeof(buf));
 
     const char* event_name;
     switch (signum) {
@@ -272,7 +272,7 @@ noreturn void pal_abort(void) {
     die_or_inf_loop();
 }
 
-void pal_describe_location(void* addr, char* buf, size_t buf_size) {
+void pal_describe_location(uintptr_t addr, char* buf, size_t buf_size) {
 #ifdef DEBUG
     if (debug_describe_location(addr, buf, buf_size) == 0)
         return;

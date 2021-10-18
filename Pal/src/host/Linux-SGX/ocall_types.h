@@ -290,7 +290,7 @@ typedef struct {
 } ms_ocall_debug_map_remove_t;
 
 typedef struct {
-    void* ms_addr;
+    uintptr_t ms_addr;
     char* ms_buf;
     size_t ms_buf_size;
 } ms_ocall_debug_describe_location_t;

@@ -21,6 +21,7 @@
 #define COMMON_CALLBACKS_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdnoreturn.h>
 
 #ifdef IN_SHIM
@@ -62,10 +63,10 @@ noreturn void abort(void);
  * This callback is optional to implement (the common library contains a default implementation,
  * defined as a weak symbol).
  */
-void describe_location(void* addr, char* buf, size_t buf_size);
+void describe_location(uintptr_t addr, char* buf, size_t buf_size);
 
 /* This is the default implementation of `describe_location`, and returns only the raw value ("%p").
  * Your implementation might call it when it fails to determine more information. */
-void default_describe_location(void* addr, char* buf, size_t buf_size);
+void default_describe_location(uintptr_t addr, char* buf, size_t buf_size);
 
 #endif /* COMMON_CALLBACKS_H */

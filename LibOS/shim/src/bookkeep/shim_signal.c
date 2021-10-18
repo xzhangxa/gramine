@@ -311,7 +311,7 @@ static noreturn void internal_fault(const char* errstr, PAL_NUM addr, PAL_CONTEX
     PAL_NUM ip = pal_context_get_ip(context);
 
     char buf[LOCATION_BUF_SIZE];
-    shim_describe_location((void*)ip, buf, sizeof(buf));
+    shim_describe_location(ip, buf, sizeof(buf));
 
     log_error("%s at 0x%08lx (%s, VMID = %u, TID = %u)", errstr, addr, buf,
               g_process_ipc_ids.self_vmid, tid);

@@ -42,6 +42,6 @@ void setup_pal_map(struct link_map* pal_map) {
     g_loaded_maps = pal_map;
 }
 
-int _DkDebugDescribeLocation(void* addr, char* buf, size_t buf_size) {
+int _DkDebugDescribeLocation(uintptr_t addr, char* buf, size_t buf_size) {
     return ocall_debug_describe_location(addr, buf, buf_size);
 }

@@ -1741,7 +1741,7 @@ int ocall_debug_map_remove(void* addr) {
     return retval;
 }
 
-int ocall_debug_describe_location(void* addr, char* buf, size_t buf_size) {
+int ocall_debug_describe_location(uintptr_t addr, char* buf, size_t buf_size) {
 #ifdef DEBUG
     int retval = 0;
 

@@ -132,18 +132,18 @@ int debug_map_init_from_proc_maps(void) {
 
 /* Search for a debug map the address belongs to. We don't store map sizes, so this searches for the
  * closest one. */
-static int debug_map_find(void* addr, char** out_name, uintptr_t* out_offset) {
+static int debug_map_find(uintptr_t addr, char** out_name, uintptr_t* out_offset) {
     int ret;
 
     spinlock_lock(&g_debug_map_lock);
 
     const char* best_name = NULL;
-    void* best_addr = NULL;
+    uintptr_t best_addr = 0;
     struct debug_map* map = g_debug_map;
     while (map) {
-        if ((uintptr_t)map->addr <= (uintptr_t)addr && (uintptr_t)map->addr > (uintptr_t)best_addr) {
+        if ((uintptr_t)map->addr <= addr && (uintptr_t)map->addr > best_addr) {
             best_name = map->name;
-            best_addr = map->addr;
+            best_addr = (uintptr_t)map->addr;
         }
         map = map->next;
     }
@@ -160,7 +160,7 @@ static int debug_map_find(void* addr, char** out_name, uintptr_t* out_offset) {
     }
 
     *out_name = name;
-    *out_offset = (uintptr_t)addr - (uintptr_t)best_addr;
+    *out_offset = addr - best_addr;
     ret = 0;
 
 out:
@@ -198,7 +198,7 @@ static int run_addr2line(const char* name, uintptr_t offset, char* buf, size_t b
 }
 
 /* Example output: "func_name at source_file.c:123, libpal.so+0x456" */
-int debug_describe_location(void* addr, char* buf, size_t buf_size) {
+int debug_describe_location(uintptr_t addr, char* buf, size_t buf_size) {
     int ret;
 
     char* name;

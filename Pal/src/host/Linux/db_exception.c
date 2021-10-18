@@ -94,7 +94,7 @@ static void handle_sync_signal(int signum, siginfo_t* info, struct ucontext* uc)
     /* exception happened in PAL code: this is fatal in Gramine */
 
     char buf[LOCATION_BUF_SIZE];
-    pal_describe_location((void*)rip, buf, sizeof(buf));
+    pal_describe_location(rip, buf, sizeof(buf));
 
     const char* event_name = pal_event_name(event);
     bool in_vdso = is_in_vdso(rip);
