@@ -70,10 +70,10 @@ static int elf_segment_prot_to_pal_prot(int elf_segment_prot) {
 }
 
 /* Trick to get the base address of where the (trusted) PAL binary is loaded:
- *   - at link time, save the offset of pal_linux_main() function in section .data.rel.ro
+ *   - at link time, save the offset of pal_main() function in section .data.rel.ro
  *   - at run time (this function):
- *       - get the current address of pal_linux_main() via RIP-relative addressing mode
- *       - get the offset of pal_linux_main() saved during link time
+ *       - get the current address of pal_main() via RIP-relative addressing mode
+ *       - get the offset of pal_main() saved during link time
  *       - subtract the latter from the former -- this gives us the base address
  *
  * Note that this function should be called *before* any relocations are done. Otherwise,
@@ -82,10 +82,10 @@ static int elf_segment_prot_to_pal_prot(int elf_segment_prot) {
 static ElfW(Addr) pal_binary_load_address(void) {
     ElfW(Addr) addr;
 #if defined(__x86_64__)
-    __asm__("leaq pal_linux_main(%%rip), %0\n"
+    __asm__("leaq pal_main(%%rip), %0\n"
             "subq 1f(%%rip), %0\n"
             ".section  .data.rel.ro\n"
-            "      1:  .quad pal_linux_main\n"
+            "      1:  .quad pal_main\n"
             ".previous\n"
             : "=r"(addr) : : "cc");
 #else
@@ -112,6 +112,9 @@ int find_string_and_symbol_tables(ElfW(Addr) ehdr_addr, ElfW(Addr) base_addr,
             break;
         }
     }
+
+    if (!dynamic_section)
+        return -PAL_ERROR_DENIED;
 
     /* iterate through vDSO's dynamic section to find the string table and the symbol table */
     ElfW(Dyn)* dynamic_section_entry = dynamic_section;
@@ -251,8 +254,8 @@ static int map_relocate_elf_object(PAL_HANDLE handle, enum elf_object_type type,
     struct link_map* map = NULL;
     struct load_segment* load_segments = NULL;
 
-    ElfW(Addr) l_relro_addr;
-    size_t l_relro_size;
+    ElfW(Addr) l_relro_addr = 0x0;
+    size_t l_relro_size = 0;
 
     const char* name = _DkStreamRealpath(handle);
     if (!name)
