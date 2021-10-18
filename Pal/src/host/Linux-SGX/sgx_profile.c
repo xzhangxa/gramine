@@ -122,7 +122,7 @@ int sgx_profile_init(void) {
     }
     g_perf_data = pd;
 
-    pid_t pid = g_pal_enclave.pal_sec.pid;
+    pid_t pid = DO_SYSCALL(getpid);
     ret = pd_event_command(pd, "pal-sgx", pid, /*tid=*/pid);
     if (!pd) {
         log_error("sgx_profile_init: reporting command failed: %d", ret);
@@ -179,7 +179,7 @@ static void sample_simple(uint64_t rip) {
     int ret;
 
     // Report all events as the same PID so that they are grouped in report.
-    pid_t pid = g_pal_enclave.pal_sec.pid;
+    pid_t pid = DO_SYSCALL(getpid);
     pid_t tid = pid;
 
     spinlock_lock(&g_perf_data_lock);
@@ -195,7 +195,7 @@ static void sample_stack(sgx_pal_gpr_t* gpr) {
     int ret;
 
     // Report all events as the same PID so that they are grouped in report.
-    pid_t pid = g_pal_enclave.pal_sec.pid;
+    pid_t pid = DO_SYSCALL(getpid);
     pid_t tid = pid;
 
     uint8_t stack[PD_STACK_SIZE];
@@ -359,7 +359,7 @@ void sgx_profile_report_elf(const char* filename, void* addr) {
     // Read the program headers and record mmap events for the segments that should be mapped as
     // executable.
 
-    pid_t pid = g_pal_enclave.pal_sec.pid;
+    pid_t pid = DO_SYSCALL(getpid);
     const ElfW(Phdr)* phdr = (const ElfW(Phdr)*)((uintptr_t)elf_addr + ehdr->e_phoff);
     ret = 0;
 

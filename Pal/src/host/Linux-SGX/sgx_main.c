@@ -899,7 +899,6 @@ static int load_enclave(struct pal_enclave* enclave, char* args, size_t args_siz
     if (!is_wrfsbase_supported())
         return -EPERM;
 
-    pal_sec->pid = DO_SYSCALL(getpid);
     pal_sec->uid = DO_SYSCALL(getuid);
     pal_sec->gid = DO_SYSCALL(getgid);
 

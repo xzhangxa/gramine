@@ -305,8 +305,6 @@ noreturn void pal_linux_main(void* initial_rsp, void* fini_callback) {
         log_warning("vvar address range not preloaded, is your system missing vvar?!");
     }
 
-    g_linux_state.pid = DO_SYSCALL(getpid);
-
     g_linux_state.uid = g_uid;
     g_linux_state.gid = g_gid;
 
