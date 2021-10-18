@@ -2,6 +2,7 @@ include ../../Scripts/Makefile.configs
 include ../../Scripts/Makefile.rules
 
 CFLAGS	+= -fno-stack-protector -fno-builtin -nostdlib \
+	  -Wl,--hash-style=both \
 	  -I. \
 	  -I../../common/include \
 	  -I../../common/include/arch/$(ARCH) \

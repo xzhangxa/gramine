@@ -143,6 +143,7 @@ shared_library('sysdb',
     ],
     link_args: [
         '-nostdlib',
+        '-Wl,--hash-style=both',
         '-Wl,-zcombreloc',
         '-Wl,-zrelro',
         '-Wl,-znow',

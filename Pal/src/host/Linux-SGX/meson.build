@@ -95,6 +95,7 @@ libpal_sgx = shared_library('pal',
 
     link_args: [
         '-nostdlib',
+        '-Wl,--hash-style=both',
         '-Wl,-zcombreloc',
         '-Wl,-zdefs',
         '-Wl,--version-script=@0@'.format(pal_sgx_map.full_path()),

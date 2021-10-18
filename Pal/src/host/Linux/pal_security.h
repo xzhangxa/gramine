@@ -7,7 +7,6 @@
 #include <linux/limits.h>
 
 #include "pal.h"
-#include "sysdeps/generic/ldsodefs.h"
 
 extern struct pal_sec {
     /* system variables */

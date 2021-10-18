@@ -46,6 +46,7 @@ foreach target_type : ['shared_library', 'static_library']
 
         link_args: [
             '-nostdlib',
+            '-Wl,--hash-style=both',
             '-Wl,-zcombreloc',
             '-Wl,-zdefs',
             '-Wl,--version-script=@0@'.format(pal_skeleton_map.full_path()),
