@@ -106,12 +106,20 @@ typedef ptrdiff_t ssize_t;
 #define SAME_TYPE(a, b)       __builtin_types_compatible_p(__typeof__(a), __typeof__(b))
 #define IS_STATIC_ARRAY(a)    (!SAME_TYPE(a, &*(a)))
 #define FORCE_STATIC_ARRAY(a) sizeof(int[IS_STATIC_ARRAY(a) - 1]) // evaluates to 0
+#define STATIC_ASSERT_EXPR(expr) sizeof(int[!!(expr) - 1]) // evaluates to 0
+#define IS_SIGNED(T) ((T)-1 < (T)1)
+
+/* It's too hard to make this macro correct w.r.t signed vs unsigned comparisons (thanks C!),
+ * so we just enforce that the arguments' types have the same signedness. */
+#define IS_IN_RANGE_INCL(value, start, end) ( \
+    STATIC_ASSERT_EXPR(IS_SIGNED(__typeof__(value)) == IS_SIGNED(__typeof__(start))) + \
+    STATIC_ASSERT_EXPR(IS_SIGNED(__typeof__(start)) == IS_SIGNED(__typeof__(end))) + \
+    (((value) < (start) || (value) > (end)) ? false : true) \
+)
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (FORCE_STATIC_ARRAY(a) + sizeof(a) / sizeof(a[0]))
 #endif
-
-#define IS_SIGNED(T) ((T)-1 < (T)1)
 
 #define SET_UNALIGNED(a, b) ({                  \
     __typeof__(b) _b = (b);                     \
@@ -170,8 +178,6 @@ typedef ptrdiff_t ssize_t;
         (void)(x);  \
     } while (0)
 #define static_strlen(str) (ARRAY_SIZE(FORCE_LITERAL_CSTR(str)) - 1)
-
-#define IS_IN_RANGE_INCL(value, start, end) (((value) < (start) || (value) > (end)) ? false : true)
 
 /* LibC functions */
 
