@@ -2,7 +2,6 @@ include ../../Scripts/Makefile.configs
 include ../../Scripts/Makefile.rules
 
 CFLAGS	+= -fno-stack-protector -fno-builtin -nostdlib \
-	  -Wl,--hash-style=both \
 	  -I. \
 	  -I../../common/include \
 	  -I../../common/include/arch/$(ARCH) \
@@ -123,11 +122,11 @@ utils.o: CFLAGS += -fPIC
 
 LDLIBS-preloads = crt_init/user_shared_start.o utils.o $(common_objs) $(pal_lib)
 $(preloads): %.so: %.c $(LDLIBS-preloads)
-	$(call cmd,csingle) -shared -fPIC $(LDLIBS-preloads)
+	$(call cmd,csingle) -Wl,--hash-style=both -shared -fPIC $(LDLIBS-preloads)
 
 LDLIBS-executables = crt_init/user_start.o utils.o $(common_objs) $(pal_lib) $(preloads)
 $(executables): %: %.c $(LDLIBS-executables)
-	$(call cmd,csingle) -no-pie $(LDLIBS-executables)
+	$(call cmd,csingle) -Wl,--hash-style=both -no-pie $(LDLIBS-executables)
 
 ifeq ($(filter %clean,$(MAKECMDGOALS)),)
 include $(wildcard *.d)
