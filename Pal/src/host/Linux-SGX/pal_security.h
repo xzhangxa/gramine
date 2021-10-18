@@ -32,10 +32,6 @@ struct pal_sec {
     PAL_NUM physical_cores_per_socket;
     int* cpu_socket;
     PAL_TOPO_INFO topo_info;
-
-#ifdef DEBUG
-    PAL_BOL in_gdb;
-#endif
 };
 
 #ifdef IN_ENCLAVE
