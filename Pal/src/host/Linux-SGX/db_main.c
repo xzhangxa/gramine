@@ -655,7 +655,7 @@ noreturn void pal_linux_main(char* uptr_libpal_uri, size_t libpal_uri_len, char*
     /* Our arguments are coming directly from the urts. We are responsible to check them. */
     int ret;
 
-    /* relocate PAL and populate g_pal_map (note that reloc is required to run `log_error`) */
+    /* relocate PAL and populate g_pal_map */
     ret = setup_pal_binary(&g_pal_map);
     if (ret < 0) {
         log_error("Relocation of the PAL binary failed: %d", ret);

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-3.0-or-later */
-/* Copyright (C) 2014 Stony Brook University */
-/* Copyright (C) 2021 Intel Labs */
+/* Copyright (C) 2014 Stony Brook University
+ * Copyright (C) 2021 Intel Labs
+ */
 
 #ifndef PAL_RTLD_H
 #define PAL_RTLD_H
@@ -27,7 +28,7 @@ struct link_map {
     /* Relocation information, taken from DT_STRTAB, DT_SYMTAB and DT_HASH. */
     const char* string_table;
     ElfW(Sym)* symbol_table;
-    int symbol_table_cnt;
+    uint32_t symbol_table_cnt;
 
     /* Typical case: INTERNAL type is for PAL binary, PRELOAD for LibOS lib, EXEC for PAL test. */
     enum elf_object_type l_type;
@@ -44,7 +45,7 @@ int load_elf_object(const char* uri, enum elf_object_type type);
 int setup_pal_binary(struct link_map* pal_map);
 int find_string_and_symbol_tables(ElfW(Addr) ehdr_addr, ElfW(Addr) base_addr,
                                   const char** out_string_table, ElfW(Sym)** out_symbol_table,
-                                  int* out_symbol_table_cnt);
+                                  uint32_t* out_symbol_table_cnt);
 
 noreturn void start_execution(const char** arguments, const char** environs);
 

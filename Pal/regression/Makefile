@@ -1,7 +1,7 @@
 include ../../Scripts/Makefile.configs
 include ../../Scripts/Makefile.rules
 
-CFLAGS	+= -fno-stack-protector -fno-builtin -nostdlib \
+CFLAGS += -fno-stack-protector -fno-builtin -nostdlib \
 	  -I. \
 	  -I../../common/include \
 	  -I../../common/include/arch/$(ARCH) \
@@ -9,6 +9,11 @@ CFLAGS	+= -fno-stack-protector -fno-builtin -nostdlib \
 	  -I../include/pal \
 	  -I../include/arch/$(ARCH) \
 	  -I../include/arch/$(ARCH)/$(PAL_HOST)
+
+# PAL expects that LibOS binary has old-style hash (DT_HASH) table in addition to the default GNU
+# hash (DT_GNU_HASH) table; PAL symbol resolution uses DT_HASH to figure out the number of dynamic
+# symbols in the SYMTAB symbol table
+LDFLAGS += -Wl,--hash-style=both
 
 preloads = \
 	Preload1.so \
@@ -122,11 +127,11 @@ utils.o: CFLAGS += -fPIC
 
 LDLIBS-preloads = crt_init/user_shared_start.o utils.o $(common_objs) $(pal_lib)
 $(preloads): %.so: %.c $(LDLIBS-preloads)
-	$(call cmd,csingle) -Wl,--hash-style=both -shared -fPIC $(LDLIBS-preloads)
+	$(call cmd,csingle) $(LDFLAGS) -shared -fPIC $(LDLIBS-preloads)
 
 LDLIBS-executables = crt_init/user_start.o utils.o $(common_objs) $(pal_lib) $(preloads)
 $(executables): %: %.c $(LDLIBS-executables)
-	$(call cmd,csingle) -Wl,--hash-style=both -no-pie $(LDLIBS-executables)
+	$(call cmd,csingle) $(LDFLAGS) -no-pie $(LDLIBS-executables)
 
 ifeq ($(filter %clean,$(MAKECMDGOALS)),)
 include $(wildcard *.d)

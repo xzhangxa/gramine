@@ -184,7 +184,7 @@ noreturn void pal_linux_main(void* initial_rsp, void* fini_callback) {
         die_or_inf_loop();
     }
 
-    /* relocate PAL and populate g_pal_map (note that reloc is required to run `log_error`) */
+    /* relocate PAL and populate g_pal_map */
     ret = setup_pal_binary(&g_pal_map);
     if (ret < 0)
         INIT_FAIL(-ret, "Relocation of the PAL binary failed");

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-3.0-or-later */
-/* Copyright (C) 2014 Stony Brook University  */
-/* Copyright (C) 2021 Intel Labs */
+/* Copyright (C) 2014 Stony Brook University
+ * Copyright (C) 2021 Intel Labs
+ */
 
 /*
  * This file contains host-specific code related to linking and reporting ELFs to debugger.
@@ -39,34 +40,13 @@ void _DkDebugMapRemove(void* addr) {
         log_error("debug_map_remove(%p) failed: %d", addr, ret);
 }
 
-/* populate g_vdso_start/g_vdso_end and g_linux_state.vdso_clock_gettime based on vDSO */
+/* populate g_linux_state.vdso_clock_gettime based on vDSO */
 int setup_vdso(ElfW(Addr) base_addr) {
     int ret;
 
-    const ElfW(Ehdr)* header = (void*)base_addr;
-    const ElfW(Phdr)* phdr = (void*)(base_addr + header->e_phoff);
-
-    int pt_loads_count = 0;
-
-    /* iterate through vDSO's program headers to populate g_vdso_start/g_vdso_end addresses */
-    for (const ElfW(Phdr)* ph = phdr; ph < &phdr[header->e_phnum]; ph++) {
-        if (ph->p_type == PT_LOAD) {
-            g_vdso_start = (uintptr_t)base_addr;
-            g_vdso_end = ALIGN_UP(g_vdso_start + (size_t)ph->p_memsz, PAGE_SIZE);
-            pt_loads_count++;
-        }
-    }
-
-    if (pt_loads_count != 1) {
-        log_warning("The VDSO has %d PT_LOAD segments, but only 1 was expected.", pt_loads_count);
-        g_vdso_start = 0;
-        g_vdso_end = 0;
-        return -PAL_ERROR_DENIED;
-    }
-
-    const char* string_table = NULL;
-    ElfW(Sym)* symbol_table  = NULL;
-    int symbol_table_cnt     = 0;
+    const char* string_table  = NULL;
+    ElfW(Sym)* symbol_table   = NULL;
+    uint32_t symbol_table_cnt = 0;
 
     ret = find_string_and_symbol_tables(base_addr, base_addr, &string_table, &symbol_table,
                                         &symbol_table_cnt);
@@ -76,7 +56,7 @@ int setup_vdso(ElfW(Addr) base_addr) {
     }
 
     /* iterate through the symbol table and find where clock_gettime vDSO func is located */
-    for (int i = 0; i < symbol_table_cnt; i++) {
+    for (uint32_t i = 0; i < symbol_table_cnt; i++) {
         const char* symbol_name = string_table + symbol_table[i].st_name;
         if (!strcmp("__vdso_clock_gettime", symbol_name)) {
             g_linux_state.vdso_clock_gettime = (void*)(base_addr + symbol_table[i].st_value);

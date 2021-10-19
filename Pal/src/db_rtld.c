@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: LGPL-3.0-or-later */
-/* Copyright (C) 2014 Stony Brook University */
-/* Copyright (C) 2021 Intel Labs */
+/* Copyright (C) 2014 Stony Brook University
+ * Copyright (C) 2021 Intel Labs
+ */
 
 /*
  * This file contains utilities to load ELF binaries into the memory and link them against each
@@ -8,13 +9,16 @@
  * regression tests. Both these kinds of ELF binaries are assumed to have specific ELF config:
  *
  *   - They must be linked with RELRO (Relocation Read-Only); this simplifies relocation because
- *     only R_X86_64_RELATIVE, R_X86_64_GLOB_DAT and R_X86_64_JUMP_SLOT reloc schemes are used.
+ *     only R_X86_64_RELATIVE, R_X86_64_GLOB_DAT and R_X86_64_JUMP_SLOT reloc schemes are used. If
+ *     we add support for archs other than x86_64 in future, we need to add more reloc schemes.
  *     Corresponding linker flags are `-Wl,-zrelro -Wl,-znow`.
  *
  *   - They must have old-style hash (DT_HASH) table; our code doesn't use the hash table itself but
  *     only reads the number of available dynamic symbols from this table and then simply iterates
  *     over all loaded ELF binaries and all their dynamic symbols. This is not efficient, but our
- *     PAL binaries currently have less than 50 symbols, so the overhead is negligible.
+ *     PAL binaries currently have less than 50 symbols, so the overhead is negligible. Note that we
+ *     cannot read the number of dynamic symbols from SHT_SYMTAB section because sections are
+ *     non-loadable and may be missing from final binaries (i.e., in vDSO).
  *     Corresponding linker flag is `-Wl,--hash-style=both`.
  *
  *  - They must have DYN or EXEC object file type. Notice that addresses in DYN binaries are
@@ -33,6 +37,7 @@
 #include "pal_internal.h"
 #include "pal_rtld.h"
 
+/* special symbol added by the linker, points to the .dynamic (PT_DYNAMIC) section */
 extern ElfW(Dyn) _DYNAMIC[];
 
 struct link_map* g_loaded_maps = NULL;
@@ -96,10 +101,10 @@ static ElfW(Addr) pal_binary_load_address(void) {
 
 int find_string_and_symbol_tables(ElfW(Addr) ehdr_addr, ElfW(Addr) base_addr,
                                   const char** out_string_table, ElfW(Sym)** out_symbol_table,
-                                  int* out_symbol_table_cnt) {
-    const char* string_table = NULL;
-    ElfW(Sym)* symbol_table  = NULL;
-    int symbol_table_cnt     = 0;
+                                  uint32_t* out_symbol_table_cnt) {
+    const char* string_table  = NULL;
+    ElfW(Sym)* symbol_table   = NULL;
+    uint32_t symbol_table_cnt = 0;
 
     const ElfW(Ehdr)* header = (void*)ehdr_addr;
     const ElfW(Phdr)* phdr   = (void*)(ehdr_addr + header->e_phoff);
@@ -113,13 +118,15 @@ int find_string_and_symbol_tables(ElfW(Addr) ehdr_addr, ElfW(Addr) base_addr,
         }
     }
 
-    if (!dynamic_section)
+    if (!dynamic_section) {
+        log_error("Loaded binary doesn't have dynamic section (required for symbol resolution)");
         return -PAL_ERROR_DENIED;
+    }
 
-    /* iterate through vDSO's dynamic section to find the string table and the symbol table */
+    /* iterate through DSO's dynamic section to find the string table and the symbol table */
     ElfW(Dyn)* dynamic_section_entry = dynamic_section;
     while (dynamic_section_entry->d_tag != DT_NULL) {
-        switch(dynamic_section_entry->d_tag) {
+        switch (dynamic_section_entry->d_tag) {
             case DT_STRTAB:
                 string_table = (const char*)(dynamic_section_entry->d_un.d_ptr + base_addr);
                 break;
@@ -137,8 +144,10 @@ int find_string_and_symbol_tables(ElfW(Addr) ehdr_addr, ElfW(Addr) base_addr,
         dynamic_section_entry++;
     }
 
-    if (!string_table || !symbol_table || !symbol_table_cnt)
+    if (!string_table || !symbol_table || !symbol_table_cnt) {
+        log_error("Loaded binary doesn't have string table, symbol table and/or hash table");
         return -PAL_ERROR_DENIED;
+    }
 
     *out_string_table     = string_table;
     *out_symbol_table     = symbol_table;
@@ -155,23 +164,31 @@ static int find_symbol_in_loaded_maps(struct link_map* map, ElfW(Rela)* rela,
     const char* symbol_name = map->string_table + map->symbol_table[symbol_idx].st_name;
 
     /* first try to find in this ELF object itself */
-    if ( map->symbol_table[symbol_idx].st_size) {
+    if (map->symbol_table[symbol_idx].st_value &&
+            map->symbol_table[symbol_idx].st_shndx != SHN_UNDEF) {
         *out_symbol_addr = map->l_base + map->symbol_table[symbol_idx].st_value;
         return 0;
     }
 
     /* next try to find in other ELF object files */
     for (struct link_map* loaded_map = g_loaded_maps; loaded_map; loaded_map = loaded_map->l_next) {
-        for (int i = 0; i < loaded_map->symbol_table_cnt; i++) {
+        for (uint32_t i = 0; i < loaded_map->symbol_table_cnt; i++) {
+            if (loaded_map->symbol_table[i].st_shndx == SHN_UNDEF)
+                continue;
+
             const char* other_symbol_name = loaded_map->string_table +
                 loaded_map->symbol_table[i].st_name;
             if (!strcmp(symbol_name, other_symbol_name)) {
+                /* NOTE: we currently don't take into account weak symbols and return the first
+                 *       symbol found (we don't have weak symbols in PAL and preloaded libs) */
                 *out_symbol_addr = loaded_map->l_base + loaded_map->symbol_table[i].st_value;
                 return 0;
             }
         }
     }
 
+    /* this could happen if e.g. LibOS and PAL binaries are out of sync */
+    log_error("Could not resolve symbol %s needed by binary %s", symbol_name, map->l_name);
     return -PAL_ERROR_DENIED;
 }
 
@@ -188,7 +205,7 @@ static int perform_relocations(struct link_map* map) {
     ElfW(Xword) plt_relas_size = 0;
 
     while (dynamic_section_entry->d_tag != DT_NULL) {
-        switch(dynamic_section_entry->d_tag) {
+        switch (dynamic_section_entry->d_tag) {
             case DT_RELA:
                 relas_addr = (ElfW(Rela)*)(base_addr + dynamic_section_entry->d_un.d_ptr);
                 break;
@@ -220,6 +237,7 @@ static int perform_relocations(struct link_map* map) {
             ElfW(Addr)* addr_to_relocate = (ElfW(Addr)*)(base_addr + rela->r_offset);
             *addr_to_relocate = symbol_addr + rela->r_addend;
         } else {
+            log_error("Unrecognized relocation type; only support R_X86_64_{RELATIVE,GLOB_DAT}");
             return -PAL_ERROR_DENIED;
         }
 
@@ -231,8 +249,10 @@ static int perform_relocations(struct link_map* map) {
     /* perform PLT relocs: supported binaries may have only R_X86_64_JUMP_SLOT relas */
     ElfW(Rela)* plt_relas_addr_end = (void*)plt_relas_addr + plt_relas_size;
     for (ElfW(Rela)* plt_rela = plt_relas_addr; plt_rela < plt_relas_addr_end; plt_rela++) {
-        if (ELFW(R_TYPE)(plt_rela->r_info) != R_X86_64_JUMP_SLOT)
+        if (ELFW(R_TYPE)(plt_rela->r_info) != R_X86_64_JUMP_SLOT) {
+            log_error("Unrecognized relocation type; only support R_X86_64_JUMP_SLOT");
             return -PAL_ERROR_DENIED;
+        }
 
         ElfW(Addr) symbol_addr;
         ret = find_symbol_in_loaded_maps(map, plt_rela, &symbol_addr);
@@ -402,7 +422,8 @@ static int map_relocate_elf_object(PAL_HANDLE handle, enum elf_object_type type,
         }
 
         /* zero out the unused but allocated part of the loaded segment */
-        memset((void*)s->data_end, 0, s->alloc_end - s->data_end);
+        if (s->alloc_end > s->data_end && ALLOC_ALIGN_UP(s->data_end) > s->data_end)
+            memset((void*)s->data_end, 0, s->alloc_end - s->data_end);
     }
 
     ret = perform_relocations(map);
@@ -534,6 +555,9 @@ int setup_pal_binary(struct link_map* pal_map) {
     pal_map->l_next = NULL;
 
     ElfW(Addr) base_addr = pal_binary_load_address();
+
+    /* at this point, symbols in the PAL binary (including _DYNAMIC) are not yet relocated, so the
+     * address of _DYNAMIC is still just an offset (there is an R_X86_64_RELATIVE rela for it) */
     ElfW(Dyn)* dynamic_section = (ElfW(Dyn)*)(base_addr + (ElfW(Addr))&_DYNAMIC);
 
     pal_map->l_name = NULL; /* will be overwritten later with argv[0] */
