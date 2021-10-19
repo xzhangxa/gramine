@@ -114,7 +114,7 @@ typedef ptrdiff_t ssize_t;
 #define IS_IN_RANGE_INCL(value, start, end) ( \
     STATIC_ASSERT_EXPR(IS_SIGNED(__typeof__(value)) == IS_SIGNED(__typeof__(start))) + \
     STATIC_ASSERT_EXPR(IS_SIGNED(__typeof__(start)) == IS_SIGNED(__typeof__(end))) + \
-    (((value) < (start) || (value) > (end)) ? false : true) \
+    ((start) <= (value) && (value) <= (end)) \
 )
 
 #ifndef ARRAY_SIZE
