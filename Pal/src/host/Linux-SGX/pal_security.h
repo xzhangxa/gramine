@@ -7,8 +7,6 @@
 #include "pal.h"
 #include "sgx_arch.h"
 
-#define PAL_ENCLAVE_INITIALIZED 0x0001
-
 typedef char PAL_SEC_STR[255];
 
 struct pal_sec {
