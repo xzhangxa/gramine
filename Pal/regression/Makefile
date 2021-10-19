@@ -10,10 +10,10 @@ CFLAGS += -fno-stack-protector -fno-builtin -nostdlib \
 	  -I../include/arch/$(ARCH) \
 	  -I../include/arch/$(ARCH)/$(PAL_HOST)
 
-# PAL expects that LibOS binary has old-style hash (DT_HASH) table in addition to the default GNU
-# hash (DT_GNU_HASH) table; PAL symbol resolution uses DT_HASH to figure out the number of dynamic
-# symbols in the SYMTAB symbol table
-LDFLAGS += -Wl,--hash-style=both
+# PAL expects that PAL regression tests have old-style hash (DT_HASH) table instead of the default
+# GNU hash (DT_GNU_HASH) table; PAL symbol resolution uses DT_HASH to figure out the number of
+# dynamic symbols in the SYMTAB symbol table
+LDFLAGS += -Wl,--hash-style=sysv
 
 preloads = \
 	Preload1.so \

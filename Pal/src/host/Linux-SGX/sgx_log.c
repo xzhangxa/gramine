@@ -57,10 +57,6 @@ void pal_log(int level, const char* fmt, ...) {
         /* NOTE: We could add "untrusted-pal" prefix to the below strings for more fine-grained log
          *       info */
         const char* prefix = NULL;
-
-        /* NOTE: We use the switch instead of an array because we may log messages before/during
-         *       PAL symbol relocation, and the array would be a to-be-relocated symbol and thus
-         *       accessing it would segfault (asm will use the offset instead of real address) */
         switch (level) {
             case LOG_LEVEL_NONE:    prefix = ""; break;
             case LOG_LEVEL_ERROR:   prefix = "error: "; break;

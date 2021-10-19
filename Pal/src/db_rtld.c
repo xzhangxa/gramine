@@ -19,7 +19,7 @@
  *     PAL binaries currently have less than 50 symbols, so the overhead is negligible. Note that we
  *     cannot read the number of dynamic symbols from SHT_SYMTAB section because sections are
  *     non-loadable and may be missing from final binaries (i.e., in vDSO).
- *     Corresponding linker flag is `-Wl,--hash-style=both`.
+ *     Corresponding linker flag is `-Wl,--hash-style=sysv`.
  *
  *  - They must have DYN or EXEC object file type. Notice that addresses in DYN binaries are
  *    actually offsets from the base address (`l_base`) and thus need adjustment, whereas addresses
@@ -97,6 +97,19 @@ static ElfW(Addr) pal_binary_load_address(void) {
 #error "Unsupported architecture"
 #endif /* defined(__x86_64__) */
     return addr;
+}
+
+/* This function should be called *before* any relocations are done: at this point, symbols in the
+ * PAL binary (including _DYNAMIC) are not yet relocated, so the address of _DYNAMIC is still just
+ * an offset in GOT. */
+static ElfW(Addr) pal_binary_dynamic_offset(void) {
+    ElfW(Addr) offset;
+#if defined(__x86_64__)
+    __asm__("movq _DYNAMIC@GOTPCREL(%%rip), %0\n" : "=r"(offset));
+#else
+#error "Unsupported architecture"
+#endif /* defined(__x86_64__) */
+    return offset;
 }
 
 int find_string_and_symbol_tables(ElfW(Addr) ehdr_addr, ElfW(Addr) base_addr,
@@ -555,10 +568,7 @@ int setup_pal_binary(struct link_map* pal_map) {
     pal_map->l_next = NULL;
 
     ElfW(Addr) base_addr = pal_binary_load_address();
-
-    /* at this point, symbols in the PAL binary (including _DYNAMIC) are not yet relocated, so the
-     * address of _DYNAMIC is still just an offset (there is an R_X86_64_RELATIVE rela for it) */
-    ElfW(Dyn)* dynamic_section = (ElfW(Dyn)*)(base_addr + (ElfW(Addr))&_DYNAMIC);
+    ElfW(Dyn)* dynamic_section = (ElfW(Dyn)*)(base_addr + pal_binary_dynamic_offset());
 
     pal_map->l_name = NULL; /* will be overwritten later with argv[0] */
     pal_map->l_type = ELF_OBJECT_INTERNAL;
