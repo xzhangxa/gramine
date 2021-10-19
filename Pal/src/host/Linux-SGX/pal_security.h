@@ -7,8 +7,6 @@
 #include "pal.h"
 #include "sgx_arch.h"
 
-typedef char PAL_SEC_STR[255];
-
 struct pal_sec {
     PAL_IDX uid, gid;
 
@@ -35,8 +33,5 @@ struct pal_sec {
 #ifdef IN_ENCLAVE
 extern struct pal_sec g_pal_sec;
 #endif
-
-#define GRAMINE_TEMPDIR "/tmp/gramine"
-#define GRAMINE_PIPEDIR (GRAMINE_TEMPDIR "/pipes")
 
 #endif /* PAL_SECURITY_H */
