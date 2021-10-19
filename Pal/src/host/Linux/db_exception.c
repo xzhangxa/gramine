@@ -105,8 +105,8 @@ static void handle_sync_signal(int signum, siginfo_t* info, struct ucontext* uc)
     }
 
     bool in_vdso = is_in_vdso(rip);
-    log_error("*** Unexpected %s occurred inside %s (PID = %ld, TID = %ld, RIP = +0x%08lx)! ***",
-              name, in_vdso ? "VDSO" : "PAL", DO_SYSCALL(getpid), DO_SYSCALL(gettid),
+    log_error("*** Unexpected %s occurred inside %s (PID = %u, TID = %ld, RIP = +0x%08lx)! ***",
+              name, in_vdso ? "VDSO" : "PAL", g_linux_state.pid, DO_SYSCALL(gettid),
               rip - (in_vdso ? g_vdso_start : (uintptr_t)TEXT_START));
 
     _DkProcessExit(1);

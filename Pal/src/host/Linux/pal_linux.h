@@ -28,6 +28,7 @@ struct timeval;
 
 extern struct pal_linux_state {
     const char**    host_environ;
+    unsigned int    pid;
     unsigned int    uid, gid;
     unsigned long   memory_quota;
 

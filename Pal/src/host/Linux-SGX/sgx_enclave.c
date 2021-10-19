@@ -243,8 +243,7 @@ static long sgx_ocall_resume_thread(void* pms) {
     if (tid < 0)
         return tid;
 
-    long my_tgid = DO_SYSCALL(getpid);
-    long ret = DO_SYSCALL(tgkill, my_tgid, tid, SIGCONT);
+    long ret = DO_SYSCALL(tgkill, g_host_pid, tid, SIGCONT);
     return ret;
 }
 
