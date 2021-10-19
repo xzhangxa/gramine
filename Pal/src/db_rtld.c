@@ -347,6 +347,12 @@ static int map_relocate_elf_object(PAL_HANDLE handle, enum elf_object_type type,
                     goto out;
                 }
 
+                if (load_segments_cnt == 1 && ehdr->e_type == ET_DYN && s->map_start) {
+                    log_error("DYN ELF first loadable program segment has non-zero map address");
+                    ret = -PAL_ERROR_INVAL;
+                    goto out;
+                }
+
                 if (s->map_start >= s->map_end) {
                     log_error("ELF loadable program segment has impossible memory region to map");
                     ret = -PAL_ERROR_INVAL;
@@ -434,9 +440,10 @@ static int map_relocate_elf_object(PAL_HANDLE handle, enum elf_object_type type,
             goto out;
         }
 
-        /* zero out the unused but allocated part of the loaded segment */
-        if (s->alloc_end > s->data_end && ALLOC_ALIGN_UP(s->data_end) > s->data_end)
-            memset((void*)s->data_end, 0, s->alloc_end - s->data_end);
+        /* zero out uninitialized but allocated part of the loaded segment (note that part of
+         * segment allocated via _DkVirtualMemoryAlloc() is already zeroed out) */
+        if (ALLOC_ALIGN_UP(s->data_end) > s->data_end)
+            memset((void*)s->data_end, 0, ALLOC_ALIGN_UP(s->data_end) - s->data_end);
     }
 
     ret = perform_relocations(map);
